@@ -113,8 +113,8 @@ def train(opt) :
                 if best_val_score is None or current_score > best_val_score:
                     best_val_score = current_score
                     best_flag = True
-                checkpoint_path = os.path.join( checkpoint_path ,'model_onlyatt.pth')
-                torch.save(model.state_dict() , checkpoint_path)
+                model_path = os.path.join( checkpoint_path ,'model_onlyatt.pth')
+                torch.save(model.state_dict() , model_path)
                 print("model saved to {}".format(checkpoint_path))
                 optimizer_path = os.path.join(checkpoint_path , 'optimizer2.pth')
                 torch.save(optimizer.state_dict(), optimizer_path)
@@ -133,8 +133,8 @@ def train(opt) :
                     pickle.dump(infos, f)
        
                 if best_flag:
-                    checkpoint_path = os.path.join('model-best_onlyatt.pth')
-                    torch.save(model.state_dict() , checkpoint_path)
+                    model_path = os.path.join('model-best_onlyatt.pth')
+                    torch.save(model.state_dict() , model_path)
                     print("model saved to {}".format(checkpoint_path))
                     with open(os.path.join('infos2_'+ str(e) +'-best.pkl'), 'wb') as f:
                         pickle.dump(infos, f)
