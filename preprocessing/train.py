@@ -29,10 +29,10 @@ def plotGraph( x1 , training_loss , valid_loss , title ) :
     plt.ylabel('Value' )
     plt.title(title)
     plt.legend()
-    plt.figure()
-    #plt.savefig(tit + '.png')   # save the figure to file
-    plt.show()
-    #plt.close()
+    #plt.figure()
+    plt.savefig(tit + '.png')   # save the figure to file
+    #plt.show()
+    plt.close()
 
 
 
@@ -139,11 +139,17 @@ def train(opt) :
                     with open(os.path.join('infos2_'+ str(e) +'-best.pkl'), 'wb') as f:
                         pickle.dump(infos, f)
        
-       
+    
+    #save both the losses 
+    np.save('trainloss_attnet1.npy' , train_loss) 
+    np.save('validloss_attnet1.npy' , val_loss)
+    
     #plot the graphs
     x1 = list(range(1, epoch+1))
     title = 'Loss'
-    plotGraph(x1,train_loss , val_loss , title)      
+    plotGraph(x1,train_loss , val_loss , title) 
+    
+       
 
 if __name__ == "__main__":
     
