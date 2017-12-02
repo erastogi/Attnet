@@ -145,7 +145,7 @@ def train(opt) :
           
     #plot the graphs
     x1 = list(range(1, epoch+1))
-    title = 'Loss'
+    title = 'Loss-onlyatt'
     plotGraph(x1,train_loss , val_loss , title)      
 
 if __name__ == "__main__":
