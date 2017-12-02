@@ -88,7 +88,7 @@ def train_generator_PG(gen, gen_opt, dis, num_batches):
     for batch in range(num_batches):
         #s = gen.sample(BATCH_SIZE)        # 64 works best
         inp, target =  #helpers.prepare_generator_batch(s, start_letter=START_LETTER, gpu=CUDA)
-        rewards = dis.batchClassify(target)
+        rewards = dis.batchClassify( target)
 
         gen_opt.zero_grad()
         pg_loss = gen.batchPGLoss(inp, target, rewards)

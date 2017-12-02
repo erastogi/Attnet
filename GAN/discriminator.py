@@ -50,19 +50,19 @@ class Discriminator(nn.Module):
         out = F.sigmoid(out)
         return out
 
-    def batchClassify(self, inp):
+    def batchClassify(self, inp , img_ft ):
         """
         Classifies a batch of sequences.
 
         Inputs: inp
             - inp: batch_size x seq_len
-
+            - img_ft : batch_size x feature_size
         Returns: out
             - out: batch_size ([0,1] score)
         """
 
         h = self.init_hidden(inp.size()[0])
-        out = self.forward(inp, h)
+        out = self.forward(inp,img_ft ,  h)
         return out.view(-1)
 
     def batchBCELoss(self, inp, target):

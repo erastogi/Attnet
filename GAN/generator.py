@@ -116,24 +116,40 @@ class Generator(nn.Module):
         Returns the NLL Loss for predicting target sequence.
 
         Inputs: inp, target
-            - inp: batch_size x seq_len
-            - target: batch_size x seq_len
+            - inp: batch_size x seq_len --> image , att , start , length of caption 
+            - target: batch_size x seq_len --> length of caption , end
 
             inp should be target with <s> (start letter) prepended
         """
 
         loss_fn = nn.NLLLoss()
         batch_size, seq_len = inp.size()
-        inp = inp.permute(1, 0)           # seq_len x batch_size
-        target = target.permute(1, 0)     # seq_len x batch_size
+        inp = inp.permute(1, 0)       # batch_size * 2  * feature_size                         # seq_len x batch_size
+        target = target.permute(1, 0)  # batch_size *  T                          # seq_len x batch_size
         h = self.init_hidden(batch_size)
 
         loss = 0
+        
+        
+        encoder_outputs, encoder_hidden = self.encoder(input_variable, input_lengths)
+        result = self.decoder(inputs=target_variable,
+                              encoder_hidden=encoder_hidden,
+                              encoder_outputs=encoder_outputs,
+                              function=self.decode_function,
+                              teacher_forcing_ratio=teacher_forcing_ratio    
+
         for i in range(seq_len):
             out, h = self.forward(inp[i], h)
             loss += loss_fn(out, target[i])
 
         return loss     # per batch
+
+def encoder( self , input , input_length) :
+    
+       
+       
+
+
 
     def batchPGLoss(self, inp, target, reward):
         """
