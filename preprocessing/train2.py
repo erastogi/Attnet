@@ -115,7 +115,7 @@ def train(opt) :
                     best_flag = True
                 model_path = os.path.join( checkpoint_path ,'model_onlyatt.pth')
                 torch.save(model.state_dict() , model_path)
-                print("model saved to {}".format(checkpoint_path))
+                print("model saved to {}".format(model_path))
                 optimizer_path = os.path.join(checkpoint_path , 'optimizer2.pth')
                 torch.save(optimizer.state_dict(), optimizer_path)
 
@@ -129,14 +129,14 @@ def train(opt) :
                 #infos['vocab'] = loader.get_vocab()
 
                 
-                with open(os.path.join('infos2_'+ str(e) +'.pkl'), 'wb') as f:
+                with open(os.path.join(checkpoint_path , 'infos2_'+ str(e) +'.pkl'), 'wb') as f:
                     pickle.dump(infos, f)
        
                 if best_flag:
-                    model_path = os.path.join('model-best_onlyatt.pth')
+                    model_path = os.path.join(checkpoint_path , 'model-best_onlyatt.pth')
                     torch.save(model.state_dict() , model_path)
-                    print("model saved to {}".format(checkpoint_path))
-                    with open(os.path.join('infos2_'+ str(e) +'-best.pkl'), 'wb') as f:
+                    print("model saved to {}".format(model_path))
+                    with open(os.path.join(checkpoint_path , 'infos2_'+ str(e) +'-best.pkl'), 'wb') as f:
                         pickle.dump(infos, f)
        
     #save both the losses 
