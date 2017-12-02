@@ -11,12 +11,13 @@ import torch.nn as nn
 from torch.autograd import Variable
 import torch.optim as optim
 
-
 import numpy as np
 import time
 import os
 import cPickle
 import matplotlib.pyplot as plt
+
+from Load_attrnet_inputs import load_batch
 
 from attnet import *
 from params import *
@@ -37,7 +38,7 @@ def plotGraph( x1 , training_loss , valid_loss , title ) :
 
 def train(opt) :
     
-    loader = DataLoader(opt)
+    #loader = DataLoader(opt)
     #get num batches from loader
     #num_batch =
     
@@ -47,27 +48,30 @@ def train(opt) :
     infos = {}
     
     # Load valid data
-    val_data = loader.get_batch('valid')
-    tmp = [val_data['fc_feats'], val_data['labels'] ]
+    val_data = np.load('val_data_att.npy').item()
+    tmp = [val_data['features'], val_data['object'] , val_data['atts'] ]
     tmp = [Variable(torch.from_numpy(_), requires_grad=False).cuda() for _ in tmp]
-    vfc_feats, vlabels = tmp
-
-    optimizer = optim.Adam(model.parameters(), lr= opt.learning_rate , weight_decay=opt.weight_decay)
+    vfc_feats, obj , atts  = tmp
+    vlabels = [ obj , atts ]
     
+    optimizer = optim.Adam(model.parameters(), lr= opt.learning_rate , weight_decay=opt.weight_decay)   
     
+    train_loss = list()
+    val_loss = list()
     
     for e in opt.epochs :   
        for b in num_batch :
        
         start = time.time()
         # Load data from train split (0)
-        data = loader.get_batch('train')
+        data = np.load('train_batch' + str(b) + '.npy' ).item()
         print('Read data:', time.time() - start)
         
+        tmp = [data['features'], data['object'] , data['atts'] ]
         
-        tmp = [data['fc_feats'], data['labels'] ]
         tmp = [Variable(torch.from_numpy(_), requires_grad=False).cuda() for _ in tmp]
-        fc_feats, labels = tmp
+        fc_feats, obj , atts = tmp
+        labels = [ obj , atts ]
         
         optimizer.zero_grad()
         loss = loss_func(model(fc_feats) , labels)
@@ -107,10 +111,10 @@ def train(opt) :
                 #infos['batch'] = iteration
                 infos['epoch'] = e
                 #infos['iterators'] = loader.iterators
-                infos['split_ix'] = loader.split_ix
+                #infos['split_ix'] = loader.split_ix
                 infos['best_val_score'] = best_val_score
                 infos['opt'] = opt
-                infos['vocab'] = loader.get_vocab()
+                #infos['vocab'] = loader.get_vocab()
 
                 
                 with open(os.path.join(opt.checkpoint_path, 'infos_'+opt.id+'.pkl'), 'wb') as f:

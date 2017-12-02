@@ -37,9 +37,8 @@ class Attnet(nn.module) :
     
         ##intialise word embeddings for layer 2
         #pretrained_weight =
-        self.nn[1].weight.data.copy_(torch.from_numpy(pretrained_weight))
+        #self.nn[1].weight.data.copy_(torch.from_numpy(pretrained_weight))
         
-    
         #for objects
         self.o = nn.Linear( self.num_layer[1] , self.num_classes[0])
         self.ls = nn.LogSoftmax()

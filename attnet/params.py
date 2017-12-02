@@ -47,15 +47,15 @@ def parse_opt():
     #                help='2048 for resnet, 512 for vgg')
 
     # Optimization: General
-    parser.add_argument('--epochs', type=int, default=5,
+    parser.add_argument('--epochs', type=int, default=100,
                     help='number of epochs')
-    parser.add_argument('--batch_size', type=int, default=32,
+    parser.add_argument('--batch_size', type=int, default=64,
                     help='minibatch size')
     parser.add_argument('--grad_clip', type=float, default=0.1, #5.,
                     help='clip gradients at this value')
-    parser.add_argument('--num_hid', type=int, default=[1,300],
+    parser.add_argument('--num_hid', type=int, default=[256,128],
                     help='number of hidden units')
-    parser.add_argument('--num_classes', type=int, default=[0,1],
+    parser.add_argument('--num_classes', type=int, default=[100,100],
                     help='number of classes')
     #parser.add_argument('--drop_prob_lm', type=float, default=0.5,
     #                help='strength of dropout in the Language Model RNN')
