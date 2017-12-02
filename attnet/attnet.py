@@ -28,10 +28,10 @@ class Attnet(nn.module) :
         
     
         self.nn = nn.Sequential(
-                  torch.nn.Linear(self.D_in, self.num_layer[0]),
-                  torch.nn.ReLU(),
-                  torch.nn.Linear(self.num_layer[0] , self.num_layer[1]),
+                  torch.nn.Linear(self.D_in, self.num_layers),
                   torch.nn.ReLU())
+                  #torch.nn.Linear(self.num_layer[0] , self.num_layer[1]),
+                  #torch.nn.ReLU())
                   #batch -norm
                   #torch.nn.BatchNorm1d(self.num_layer[1]))
     
@@ -40,10 +40,10 @@ class Attnet(nn.module) :
         #self.nn[1].weight.data.copy_(torch.from_numpy(pretrained_weight))
         
         #for objects
-        self.o = nn.Linear( self.num_layer[1] , self.num_classes[0])
+        self.o = nn.Linear( self.num_layers, self.num_classes[0])
         self.ls = nn.LogSoftmax()
         #for attributes
-        self.att = nn.Linear( self.num_layer[1] , self.num_classes[1])
+        self.att = nn.Linear( self.num_layers , self.num_classes[1])
         self.sig = nn.Sigmoid()
     
     def forward(self,input) :

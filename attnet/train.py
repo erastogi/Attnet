@@ -40,17 +40,17 @@ def train(opt) :
     
     #loader = DataLoader(opt)
     #get num batches from loader
-    #num_batch =
+    num_batch = 2494
     
-    model = Attnet()
+    model = Attnet(256,128,[100,100])
     model.cuda()
 
     infos = {}
     
     # Load valid data
     val_data = np.load('val_data_att.npy').item()
-    tmp = [val_data['features'], val_data['object'] , val_data['atts'] ]
-    tmp = [Variable(torch.from_numpy(_), requires_grad=False).cuda() for _ in tmp]
+    tmp = [val_data['features'][0:5000] , val_data['object'][0:5000] , val_data['atts'][0:5000] ]
+    tmp = [Variable(torch.from_numpy(t), requires_grad=False).cuda() for np.array(t)in tmp]
     vfc_feats, obj , atts  = tmp
     vlabels = [ obj , atts ]
     
@@ -69,7 +69,7 @@ def train(opt) :
         
         tmp = [data['features'], data['object'] , data['atts'] ]
         
-        tmp = [Variable(torch.from_numpy(_), requires_grad=False).cuda() for _ in tmp]
+        tmp = [Variable(torch.from_numpy(t), requires_grad=False).cuda() for np.array(t) in tmp]
         fc_feats, obj , atts = tmp
         labels = [ obj , atts ]
         

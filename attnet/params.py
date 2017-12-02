@@ -112,9 +112,10 @@ def parse_opt():
                     help='an id identifying this run/job. used in cross-val and appended when writing progress files')
     parser.add_argument('--train_only', type=int, default=0,
                     help='if true then use 80k, else use 110k')
-
+    
+    """
     args = parser.parse_args()
-
+    """ 
     # Check if args are valid
     assert args.rnn_size > 0, "rnn_size should be greater than 0"
     assert args.num_layers > 0, "num_layers should be greater than 0"
