@@ -22,10 +22,10 @@ class Discriminator(nn.Module):
         self.max_seq_len = max_seq_len
         self.gpu = gpu
         self.embeddings = nn.Embedding(vocab_size, embedding_dim)
-        self.gru = nn.GRU(embedding_dim, hidden_dim, num_layers=2, bidirectional=True, dropout=dropout)
-        self.gru2hidden = nn.Linear(2*2*hidden_dim, hidden_dim)
-        self.dropout_linear = nn.Dropout(p=dropout)
-        self.hidden2out = nn.Linear(hidden_dim, 1)
+        self.gru = nn.GRU(embedding_dim, hidden_dim, num_layers=1, bidirectional=False, dropout=dropout)
+        #self.gru2hidden = nn.Linear(2*2*hidden_dim, hidden_dim)
+        #self.dropout_linear = nn.Dropout(p=dropout)
+        #self.hidden2out = nn.Linear(hidden_dim, 1)
 
     def init_hidden(self, batch_size):
         h = autograd.Variable(torch.zeros(2*2*1, batch_size, self.hidden_dim))
@@ -50,9 +50,10 @@ class Discriminator(nn.Module):
         out = F.sigmoid(out)
         return out
     """
-    def forward(self, inp, hidden , input_lengths=None):
+    def forward(self, inp, img_ft , input_lengths=None):
         """
         Embeds input and applies GRU one token at a time (seq_len = 1)
+        """
         """
         # input dim                                             # batch_size
         emb = self.embeddings(inp)                              # batch_size x embedding_dim
@@ -63,12 +64,25 @@ class Discriminator(nn.Module):
         out , _ = nn.utils.rnn.pad_packed_sequence(out, batch_first=True)
         ####        
         out = self.gru2out(out.view(-1, self.hidden_dim))       # batch_size x vocab_size
+        """
+        #captions should be paddded
+        
+        emb = self.embeddings(captions)
+        #emb = torch.cat((features.unsqueeze(1), embed), 1)
+        packed = pack_padded_sequence(emb,  input_lengths , batch_first=True)  #time_step * batch  * embed_size
+        _ , out = self.gru(packed) # op -->  t * batch * hidden_size , hid --> 1 *  batch * hidden_size 
+
+        #out = self.linear(hiddens[0])          
+        #out = F.tanh(out)
+        ######
+        out = out.view(-1, self.hidden_dim)  
         out = torch.dot(img_ft , out)        
         out = F.sigmoid(out)
+        
         return out
     
       
-    def batchClassify(self, inp , img_ft ):
+    def batchClassify(self, inp , img_ft , lengths ):
         """
         Classifies a batch of sequences.
 
@@ -80,10 +94,10 @@ class Discriminator(nn.Module):
         """
 
         #h = self.init_hidden(inp.size()[0])
-        out = self.forward(inp,img_ft , None)
+        out = self.forward(inp, img_ft , lengths)
         return out.view(-1)
 
-    def batchBCELoss(self, inp, img_ft  , target):
+    def batchBCELoss(self, inp, img_ft  , lengths , target):
         """
         Returns Binary Cross Entropy Loss for discriminator.
 
@@ -95,6 +109,6 @@ class Discriminator(nn.Module):
         loss_fn = nn.BCELoss()
         
         #h = self.init_hidden(inp.size()[0])
-        out = self.forward(inp,img_ft , None )
+        out = self.forward(inp,img_ft , lengths )
       
         return loss_fn(out, target)

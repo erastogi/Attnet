@@ -173,8 +173,9 @@ def test(tdata) :
 
 if __name__ == "__main__":
     #train = 0 
-    opt = parse_opt()
+    #opt = parse_opt()
     #if train : 
     train(opt)
     #else :
-        
+    
+     

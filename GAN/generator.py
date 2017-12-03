@@ -130,28 +130,29 @@ class Generator(nn.Module):
 
         loss = 0
         
-        
+        """
         encoder_outputs, encoder_hidden = self.encoder(input_variable, input_lengths)
         result = self.decoder(inputs=target_variable,
                               encoder_hidden=encoder_hidden,
                               encoder_outputs=encoder_outputs,
                               function=self.decode_function,
                               teacher_forcing_ratio=teacher_forcing_ratio    
-
+        """
+        
         for i in range(seq_len):
             out, h = self.forward(inp[i], h)
             loss += loss_fn(out, target[i])
-
+            
         return loss     # per batch
 
-def encoder( self , input , input_length) :
+#def encoder( self , input , input_length) :
     
        
        
 
 
 
-    def batchPGLoss(self, inp, target, reward):
+    def batchPGLoss(self, inp, target, reward): 
         """
         Returns a pseudo-loss that gives corresponding policy gradients (on calling .backward()).
         Inspired by the example in http://karpathy.github.io/2016/05/31/rl/
@@ -177,5 +178,8 @@ def encoder( self , input , input_length) :
             for j in range(batch_size):
                 loss += -out[j][target.data[i][j]]*reward[j]     # log(P(y_t|Y_1:Y_{t-1})) * Q
 
-        return loss/batch_size
+       #loss for discriminator 
+       #
+       #loss = loss - log(rewards)   ( loss --> original generator loss)
+       return loss/batch_size
 
