@@ -29,7 +29,8 @@ class Attnet(nn.Module) :
     
         self.nn = nn.Sequential(
                   torch.nn.Linear(self.D_in, self.num_layers),
-                  torch.nn.ReLU())
+                  torch.nn.ReLU() ,
+                  torch.nn.BatchNorm1d(self.num_layers))
                   #torch.nn.Linear(self.num_layer[0] , self.num_layer[1]),
                   #torch.nn.ReLU())
                   #batch -norm

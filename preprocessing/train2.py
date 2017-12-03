@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 # from Load_attrnet_inputs import load_batch
 
 from attnet2 import *
-from params import *
+#from params import *
 
 def plotGraph( x1 , training_loss , valid_loss , title ) :
     plt.plot(x1, training_loss, label = "train")
@@ -30,13 +30,13 @@ def plotGraph( x1 , training_loss , valid_loss , title ) :
     plt.title(title)
     plt.legend()
     #plt.figure()
-    plt.savefig(tit + '.png')   # save the figure to file
+    plt.savefig(title + '.png')   # save the figure to file
     #plt.show()
     plt.close()
 
 
 
-def train(opt) :
+def train() :
     
     #loader = DataLoader(opt)
     #get num batches from loader
@@ -66,37 +66,39 @@ def train(opt) :
     val_loss = list()
     
     for e in range(epochs) :   
+       tl = 0  
        for b in range(num_batch) :
        
-        start = time.time()
-        # Load data from train split (0)
-        data = np.load('train_batch' + str(b) + '.npy' ).item()
-        print('Read data:', time.time() - start)
+           start = time.time()
+           # Load data from train split (0)
+           data = np.load('train_batch' + str(b) + '.npy' ).item()
+           print('Read data:', time.time() - start)
         
-        tmp = [data['features'], data['object'] , data['atts'] ]
+           tmp = [data['features'], data['object'] , data['atts'] ]
         
-        fc_feats = Variable(torch.from_numpy(np.array(tmp[0])), requires_grad=False).cuda()
-        #obj = Variable(torch.LongTensor(torch.from_numpy(np.array(tmp[1]))), requires_grad=False).cuda() 
-        #print np.array(tmp[2]).shape
-        atts  =  Variable(torch.from_numpy(np.array(tmp[2])), requires_grad=False).cuda()
-        #tmp = [Variable(torch.from_numpy(t), requires_grad=False).cuda() for np.array(t) in tmp]
-        #fc_feats, obj , atts = tmp
-        #atts = obj
-        #print atts.size()
-        labels = atts #[ obj , atts ]
+           fc_feats = Variable(torch.from_numpy(np.array(tmp[0])), requires_grad=False).cuda()
+           #obj = Variable(torch.LongTensor(torch.from_numpy(np.array(tmp[1]))), requires_grad=False).cuda() 
+           #print np.array(tmp[2]).shape
+           atts  =  Variable(torch.from_numpy(np.array(tmp[2])), requires_grad=False).cuda()
+           #tmp = [Variable(torch.from_numpy(t), requires_grad=False).cuda() for np.array(t) in tmp]
+           #fc_feats, obj , atts = tmp
+           #atts = obj
+           #print atts.size()
+           labels = atts #[ obj , atts ]
         
-        optimizer.zero_grad()
-        loss = loss_func(model(fc_feats) , labels)
-        loss.backward()
+           optimizer.zero_grad()
+           loss = loss_func(model(fc_feats) , labels)
+           loss.backward()
         #utils.clip_gradient(optimizer, opt.grad_clip)
-        torch.nn.utils.clip_grad_norm(model.parameters(), opt.grad_clip)
-        optimizer.step()
-        train_loss.append(loss.data[0])
-        torch.cuda.synchronize()
-        end = time.time()
-        print("iter {} (epoch {}), train_loss = {:.3f}, time/batch = {:.3f}" \
-            .format(b, e, train_loss[-1], end - start))
+           torch.nn.utils.clip_grad_norm(model.parameters(), opt.grad_clip)
+           optimizer.step()
+           tl = tl + loss.data[0] 
+           torch.cuda.synchronize()
+           end = time.time()
+           print("iter {} (epoch {}), train_loss = {:.3f}, time/batch = {:.3f}" \
+                  .format(b, e, loss.data[0], end - start))
        
+       train_loss.append((tl / (b+1) )) 
         
        #validation
        loss = loss_func(model(vfc_feats) , vlabels)
@@ -144,11 +146,35 @@ def train(opt) :
     np.save('validloss_att.npy' , val_loss)
           
     #plot the graphs
-    x1 = list(range(1, epoch+1))
+    x1 = list(range(1, epochs+1))
     title = 'Loss-onlyatt'
-    plotGraph(x1,train_loss , val_loss , title)      
+    plotGraph(x1,train_loss , val_loss , title)    
+    
+    
+def test(tdata) :
+    
+#laod pretrained model  
+# Load valid data
+    #val_data = np.load('val_data_att.npy').item()
+    tmp = tdata['features']  # tdata['object'] , tdata['atts'] ]
+    fc_feats = Variable(torch.from_numpy(np.array(tmp)), requires_grad=False).cuda()       
+    
+    #model = models.setup(opt)
+    model = Attnet(256,128,[ 100 ,100 ])
+    model.load_state_dict(torch.load('model-best_onlyatt.pth'))
+    model.cuda()
+    model.eval()    
+
+    att_features = model.nn.forward(fc_feats)   
+    
+    return att_features
+    
+    
 
 if __name__ == "__main__":
-    
-    opt = parse_opt()
-    train(opt)
+    #train = 0
+    #opt = parse_opt()
+    #if train : 
+    train() #opt)
+    #else :
+    #     test(1) 

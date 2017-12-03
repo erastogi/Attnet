@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 # from Load_attrnet_inputs import load_batch
 
-from attnet2 import *
+from attnet import *
 from params import *
 
 def plotGraph( x1 , training_loss , valid_loss , title ) :
@@ -30,7 +30,7 @@ def plotGraph( x1 , training_loss , valid_loss , title ) :
     plt.title(title)
     plt.legend()
     #plt.figure()
-    plt.savefig(tit + '.png')   # save the figure to file
+    plt.savefig(title + '.png')   # save the figure to file
     #plt.show()
     plt.close()
 
@@ -55,10 +55,10 @@ def train(opt) :
         
     #tmp = [Variable(torch.from_numpy(t), requires_grad=False).cuda() for np.array(t) in tmp]
     vfc_feats = Variable(torch.from_numpy(np.array(tmp[0])), requires_grad=False).cuda()
-    #obj = Variable(torch.from_numpy(np.array(tmp[1])), requires_grad=False).cuda() 
+    obj = Variable(torch.from_numpy(np.array(tmp[1])), requires_grad=False).cuda() 
     atts  =  Variable(torch.from_numpy(np.array(tmp[2])), requires_grad=False).cuda()
     #atts = obj 
-    vlabels = atts #[ obj , atts ]
+    vlabels = [ obj , atts ]
     
     optimizer = optim.Adam(model.parameters(), lr=0.0001 ) #, weight_decay=0.001)   
     
@@ -66,6 +66,7 @@ def train(opt) :
     val_loss = list()
     
     for e in range(epochs) :   
+       tl = 0  
        for b in range(num_batch) :
        
         start = time.time()
@@ -76,14 +77,14 @@ def train(opt) :
         tmp = [data['features'], data['object'] , data['atts'] ]
         
         fc_feats = Variable(torch.from_numpy(np.array(tmp[0])), requires_grad=False).cuda()
-        #obj = Variable(torch.LongTensor(torch.from_numpy(np.array(tmp[1]))), requires_grad=False).cuda() 
+        obj = Variable(torch.LongTensor(torch.from_numpy(np.array(tmp[1]))), requires_grad=False).cuda() 
         #print np.array(tmp[2]).shape
         atts  =  Variable(torch.from_numpy(np.array(tmp[2])), requires_grad=False).cuda()
         #tmp = [Variable(torch.from_numpy(t), requires_grad=False).cuda() for np.array(t) in tmp]
         #fc_feats, obj , atts = tmp
         #atts = obj
         #print atts.size()
-        labels = atts #[ obj , atts ]
+        labels = [ obj , atts ]
         
         optimizer.zero_grad()
         loss = loss_func(model(fc_feats) , labels)
@@ -91,13 +92,15 @@ def train(opt) :
         #utils.clip_gradient(optimizer, opt.grad_clip)
         torch.nn.utils.clip_grad_norm(model.parameters(), opt.grad_clip)
         optimizer.step()
-        train_loss.append(loss.data[0])
+        #train_loss.append(loss.data[0])
+        tl = tl + loss.data[0]
         torch.cuda.synchronize()
         end = time.time()
         print("iter {} (epoch {}), train_loss = {:.3f}, time/batch = {:.3f}" \
-            .format(b, e, train_loss[-1], end - start))
+            .format(b, e, loss.data[0] , end - start))
        
         
+       train_loss.append((tl / (b+1) ))  
        #validation
        loss = loss_func(model(vfc_feats) , vlabels)
        val_loss.append(loss.data[0])
@@ -113,10 +116,10 @@ def train(opt) :
                 if best_val_score is None or current_score > best_val_score:
                     best_val_score = current_score
                     best_flag = True
-                checkpoint_path = os.path.join( checkpoint_path ,'model_onlyatt.pth')
+                checkpoint_path = os.path.join( checkpoint_path ,'model.pth')
                 torch.save(model.state_dict() , checkpoint_path)
                 print("model saved to {}".format(checkpoint_path))
-                optimizer_path = os.path.join(checkpoint_path , 'optimizer2.pth')
+                optimizer_path = os.path.join(checkpoint_path , 'optimizer.pth')
                 torch.save(optimizer.state_dict(), optimizer_path)
 
                 # Dump miscalleous informations
@@ -129,29 +132,49 @@ def train(opt) :
                 #infos['vocab'] = loader.get_vocab()
 
                 
-                with open(os.path.join('infos2_'+ str(e) +'.pkl'), 'wb') as f:
+                with open(os.path.join('infos_'+ str(e) +'.pkl'), 'wb') as f:
                     pickle.dump(infos, f)
        
                 if best_flag:
-                    checkpoint_path = os.path.join('model-best_onlyatt.pth')
+                    checkpoint_path = os.path.join('model-best.pth')
                     torch.save(model.state_dict() , checkpoint_path)
                     print("model saved to {}".format(checkpoint_path))
-                    with open(os.path.join('infos2_'+ str(e) +'-best.pkl'), 'wb') as f:
+                    with open(os.path.join('infos_'+ str(e) +'-best.pkl'), 'wb') as f:
                         pickle.dump(infos, f)
        
     
     #save both the losses 
-    np.save('trainloss_attnet1.npy' , train_loss) 
-    np.save('validloss_attnet1.npy' , val_loss)
+    np.save('trainloss.npy' , train_loss) 
+    np.save('validloss.npy' , val_loss)
     
     #plot the graphs
-    x1 = list(range(1, epoch+1))
-    title = 'Loss'
+    x1 = list(range(1, epochs+1))
+    title = 'Loss_attnet'
     plotGraph(x1,train_loss , val_loss , title) 
+
+def test(tdata) :
     
+#laod pretrained model  
+# Load valid data
+   
+    tmp = tdata['features']  # tdata['object'] , tdata['atts'] ]
+    fc_feats = Variable(torch.from_numpy(np.array(tmp)), requires_grad=False).cuda()       
+    
+    #model = models.setup(opt)
+    model = Attnet(256,128,[ 100 ,100 ])
+    model.load_state_dict(torch.load('model-best.pth'))
+    model.cuda()
+    model.eval()    
+
+    att_features = model.nn.forward(fc_feats)   
+    
+    return att_features
        
 
 if __name__ == "__main__":
-    
+    #train = 0 
     opt = parse_opt()
+    #if train : 
     train(opt)
+    #else :
+        
