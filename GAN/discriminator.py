@@ -11,78 +11,51 @@ import torch.autograd as autograd
 import torch.nn as nn
 import torch.nn.functional as F
 import pdb
+from dis_enc_dec import * 
 
 
 class Discriminator(nn.Module):
 
-    def __init__(self, embedding_dim, hidden_dim, vocab_size, max_seq_len, gpu=False, dropout=0.2):
-        super(Discriminator, self).__init__()
-        self.hidden_dim = hidden_dim
-        self.embedding_dim = embedding_dim
-        self.max_seq_len = max_seq_len
-        self.gpu = gpu
-        self.embeddings = nn.Embedding(vocab_size, embedding_dim)
-        self.gru = nn.GRU(embedding_dim, hidden_dim, num_layers=1, bidirectional=False, dropout=dropout)
-        #self.gru2hidden = nn.Linear(2*2*hidden_dim, hidden_dim)
-        #self.dropout_linear = nn.Dropout(p=dropout)
-        #self.hidden2out = nn.Linear(hidden_dim, 1)
+    def __init__(self, embed_size , encoder_model_path , hidden_size ,\
+                 vocab , num_layers , decoder_model_path , \
+                 learning_rate) : 
+         
+          self.embed_size = embed_size
+          self.hidden_size = hidden_size
+          self.num_layers =  num_layers
+          #self.objs_attrs_size = objs_attrs_size
+          self.vocab = vocab
+          
+          #initialize encoder and decoder parameters
+          self.img = EncoderCNN(embed_size, model_path=encoder_model_path)
+          self.lang = DecoderRNN(embed_size, hidden_size, 
+                         len(vocab), num_layers,
+                         model_path=decoder_model_path)
 
-    def init_hidden(self, batch_size):
-        h = autograd.Variable(torch.zeros(2*2*1, batch_size, self.hidden_dim))
-
-        if self.gpu:
-            return h.cuda()
-        else:
-            return h
-    """
-    def forward(self, input, img_ft , hidden):
-        # input dim                                                # batch_size x seq_len
-        emb = self.embeddings(input)                               # batch_size x seq_len x embedding_dim
-        emb = emb.permute(1, 0, 2)                                 # seq_len x batch_size x embedding_dim
-        _, hidden = self.gru(emb, hidden)                          # 4 x batch_size x hidden_dim
-        hidden = hidden.permute(1, 0, 2).contiguous()              # batch_size x 4 x hidden_dim
-        out = self.gru2hidden(hidden.view(-1, 4*self.hidden_dim))  # batch_size x 4*hidden_dim
-        out = F.tanh(out)
-        out = self.dropout_linear(out)
-        out = self.hidden2out(out)                                 # batch_size x 1
-        ## do a dot product with image feature
-        out = torch.dot(img_ft , out)        
-        out = F.sigmoid(out)
-        return out
-    """
-    def forward(self, inp, img_ft , input_lengths=None):
-        """
-        Embeds input and applies GRU one token at a time (seq_len = 1)
-        """
-        """
-        # input dim                                             # batch_size
-        emb = self.embeddings(inp)                              # batch_size x embedding_dim
-        emb = emb.view(1, -1, self.embedding_dim)               # 1 x batch_size x embedding_dim
-        ####
-        emb = nn.utils.rnn.pack_padded_sequence(emb, input_lengths, batch_first=True)
-        out, hidden = self.gru(emb, hidden)                     # 1 x batch_size x hidden_dim (out)
-        out , _ = nn.utils.rnn.pad_packed_sequence(out, batch_first=True)
-        ####        
-        out = self.gru2out(out.view(-1, self.hidden_dim))       # batch_size x vocab_size
-        """
-        #captions should be paddded
+          #optimizer
+          params = list(self.decoder.parameters()) + list(self.encoder.linear.parameters()) \
+          + list(self.encoder.bn.parameters())
         
-        emb = self.embeddings(captions)
-        #emb = torch.cat((features.unsqueeze(1), embed), 1)
-        packed = pack_padded_sequence(emb,  input_lengths , batch_first=True)  #time_step * batch  * embed_size
-        _ , out = self.gru(packed) # op -->  t * batch * hidden_size , hid --> 1 *  batch * hidden_size 
-
-        #out = self.linear(hiddens[0])          
-        #out = F.tanh(out)
-        ######
-        out = out.view(-1, self.hidden_dim)  
-        out = torch.dot(img_ft , out)        
-        out = F.sigmoid(out)
         
-        return out
+          self.optimizer = torch.optim.Adam(params, lr=learning_rate)           
+        
+
+    def forward(self , images , captions , lengths) :
+
+       #run forward pass on encoder and decoder
+       self.lang.zero_grad()
+       self.img.zero_grad()
+       features = self.img(images)
+       out = self.lang(captions , lengths)     
+       
+       ######  
+       out = torch.dot( features , out)        
+       out = F.sigmoid(out)
+        
+       return out
     
-      
-    def batchClassify(self, inp , img_ft , lengths ):
+    
+    def batchClassify(self, images , captions , lengths) :
         """
         Classifies a batch of sequences.
 
@@ -93,11 +66,21 @@ class Discriminator(nn.Module):
             - out: batch_size ([0,1] score)
         """
 
-        #h = self.init_hidden(inp.size()[0])
-        out = self.forward(inp, img_ft , lengths)
-        return out.view(-1)
+       #run forward pass on encoder and decoder
+       self.lang.zero_grad()
+       self.img.zero_grad()
+       features = self.img(images)
+       out = self.lang(captions , lengths)     
+       
+       ######  
+       out = torch.dot( features , out)        
+       out = F.sigmoid(out)
+        
+       return out
 
-    def batchBCELoss(self, inp, img_ft  , lengths , target):
+   
+  
+    def batchBCELoss(self, out , target):
         """
         Returns Binary Cross Entropy Loss for discriminator.
 
@@ -105,10 +88,11 @@ class Discriminator(nn.Module):
             - inp: batch_size x seq_len
             - target: batch_size (binary 1/0)
         """
-
+ 
         loss_fn = nn.BCELoss()
-        
-        #h = self.init_hidden(inp.size()[0])
-        out = self.forward(inp,img_ft , lengths )
-      
         return loss_fn(out, target)
+ 
+    def newloss( self , true_sig , gen_sig) :
+        
+        loss = - torch.log(true_sig) - torch.log(1 - gen_sig) 
+        return loss

@@ -22,10 +22,8 @@ class Discriminator(nn.Module):
         self.max_seq_len = max_seq_len
         self.gpu = gpu
         self.embeddings = nn.Embedding(vocab_size, embedding_dim)
-        self.gru = nn.GRU(embedding_dim, hidden_dim, num_layers=1, bidirectional=False, dropout=dropout)
-        #self.gru2hidden = nn.Linear(2*2*hidden_dim, hidden_dim)
-        #self.dropout_linear = nn.Dropout(p=dropout)
-        #self.hidden2out = nn.Linear(hidden_dim, 1)
+        self.gru = nn.LSTM(embedding_dim, hidden_dim, num_layers=1, bidirectional=False, dropout=dropout)
+
 
     def init_hidden(self, batch_size):
         h = autograd.Variable(torch.zeros(2*2*1, batch_size, self.hidden_dim))

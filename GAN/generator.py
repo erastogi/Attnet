@@ -58,6 +58,7 @@ class Generator(nn.Module):
         ####        
         out = self.gru2out(out.view(-1, self.hidden_dim))       # batch_size x vocab_size
         out = F.log_softmax(out)
+
         return out, hidden
     """
     def forward(self, input_var, input_lengths=None):
